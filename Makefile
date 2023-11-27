@@ -1,28 +1,33 @@
-# Joseph Kehoe
-# This is very basic. It is just here to show you a simple sfml graphics display that you can use.
-# I expect better from you!
+# Sam Cullen
+# C00250093
 
+# Makefile for SFML test program
+
+# Compiler and flags
 CXX = g++
-CPPFILES= test.cpp
-CPPFLAGS = -Wall /home/sam/Documents/Wa-tor
-
+CPPFLAGS = -Wall -I/home/sam/Documents/Wa-tor
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lgomp
-EXE= testApp
 
-SRCS=test.cpp
-OBJS=$(subst .cpp,.o,$(SRCS))
+# Source files
+SRCS = test.cpp
+OBJS = $(SRCS:.cpp=.o)
+EXE = testApp
 
-#This rule says that each .o file depends on a .cpp file of the same name
-#This is actually built into Make but anyways...
+# Rule to build object files
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CPPFLAGS)  $(DEBUGFLAGS)
+	$(CXX) -c -o $@ $< $(CPPFLAGS)
 
+# Main target
+all: $(EXE)
 
-ALL: $(OBJS)
+# Rule to build the executable
+$(EXE): $(OBJS)
 	$(CXX) $(OBJS) -o $(EXE) $(LDFLAGS)
-	
-# GO to directory
-# make
-# cppflags = directory
-# make
-# ./testApp
+
+# Clean up intermediate files
+clean:
+	rm -f $(OBJS)
+
+# Clean up all generated files
+distclean: clean
+	rm -f $(EXE)
