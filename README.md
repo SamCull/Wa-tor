@@ -1,4 +1,4 @@
-# Wator Project
+# Wa-tor Simulation
 
 ## Author
 Sam Cullen
