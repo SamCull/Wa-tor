@@ -1,240 +1,60 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
-#include <vector>
 #include <cstdlib>
 #include <ctime>
-#include <omp.h>
+#include <vector>
+#include <chrono>
+#include <thread>
 
-int numSharks = 30;
-int numFish = 5;
-int FishBreed = 1000;
-int SharkBreed = 200;
-int Starve = 75;
-int GridSize = 10;
-int Threads = 2;
+const int gridSize = 100;
+const int cellSize = 5;
+const int reproductionTime = 50;  // Adjust the reproduction time as needed
 
-int xdim = 100;
-int ydim = 100;
-int WindowXSize = 1000;
-int WindowYSize = 1000;
-int cellXSize = WindowXSize / xdim;
-int cellYSize = WindowYSize / ydim;
-
-class Fish {
+class Entity {
 public:
-    Fish(int x, int y);
-    void move(std::vector<std::vector<int>>& grid);
-    void reproduce(std::vector<Fish>& fishList);
-    int getX() const { return x; }
-    int getY() const { return y; }
-
-private:
     int x, y;
-    int reproductionTime;
-};
+    bool isEaten;
+    int survivalTime;
 
-class Shark {
-public:
-    Shark(int x, int y);
-    void move(std::vector<std::vector<int>>& grid);
-    void reproduce(std::vector<Shark>& sharkList);
-    void decreaseEnergy();
-    int getX() const { return x; }
-    int getY() const { return y; }
-
-
-
-private:
-    int x, y;
-    int reproductionTime;
-    int energy;
-};
-void Shark::decreaseEnergy() {
-    energy--;
-
-    if (energy <= 0) {
-        energy = 0;
-    }
-}
-
-std::vector<Fish> fishList;
-
-Fish::Fish(int x, int y) : x(x), y(y), reproductionTime(0) {}
-
-void Fish::move(std::vector<std::vector<int>>& grid) {
-    int direction = rand() % 4; // 0: up, 1: down, 2: left, 3: right
-
-    int newX = x;
-    int newY = y;
-
-    switch (direction) {
-        case 0:
-            newY = (y > 0) ? y - 1 : y;
-            break;
-        case 1:
-            newY = (y < grid[0].size() - 1) ? y + 1 : y;
-            break;
-        case 2:
-            newX = (x > 0) ? x - 1 : x;
-            break;
-        case 3:
-            newX = (x < grid.size() - 1) ? x + 1 : x;
-            break;
+    Entity() {
+        x = rand() % gridSize;
+        y = rand() % gridSize;
+        isEaten = false;
+        survivalTime = 0;
     }
 
-    // Check if the new position is within the grid boundaries and unoccupied
-    if (newX >= 0 && newX < grid.size() && newY >= 0 && newY < grid[0].size() && grid[newX][newY] == 0) {
-        grid[x][y] = 0;  // Clear current position
-        x = newX;
-        y = newY;
-        grid[x][y] = 1;  // Set new position
-    }
-}
+    void move() {
+        // Move randomly within the boundaries
+        x = std::max(0, std::min(gridSize - 1, x + rand() % 3 - 1));
+        y = std::max(0, std::min(gridSize - 1, y + rand() % 3 - 1));
 
-void Fish::reproduce(std::vector<Fish>& fishList) {
-    if (reproductionTime >= FishBreed) {
-        fishList.push_back(Fish(x, y));
-        reproductionTime = 0;
-    } else {
-        reproductionTime++;
-    }
-}
+        // Increment survival time
+        ++survivalTime;
 
-Shark::Shark(int x, int y) : x(x), y(y), reproductionTime(0) {}
+        // Reproduction
+        if (!isEaten && survivalTime >= reproductionTime) {
+            // Leave a new fish in the old position
+            Entity newFish;
+            newFish.x = x;
+            newFish.y = y;
+            preyVector.push_back(newFish);
 
-void Shark::move(std::vector<std::vector<int>>& grid) {
-    int direction = rand() % 4; // 0: up, 1: down, 2: left, 3: right
-
-    int newX = x;
-    int newY = y;
-
-    switch (direction) {
-        case 0:
-            newY = (y > 0) ? y - 1 : y;
-            break;
-        case 1:
-            newY = (y < grid[0].size() - 1) ? y + 1 : y;
-            break;
-        case 2:
-            newX = (x > 0) ? x - 1 : x;
-            break;
-        case 3:
-            newX = (x < grid.size() - 1) ? x + 1 : x;
-            break;
-    }
-    // Check if the new position is within the grid boundaries
-    if (newX >= 0 && newX < grid.size() && newY >= 0 && newY < grid[0].size()) {
-        // If there's a fish at the new position, eat it
-        if (grid[newX][newY] == 1) {
-            energy += 5;
-            // Remove the fish from the grid and fishList
-            grid[newX][newY] = 0;
-            auto it = std::remove_if(fishList.begin(), fishList.end(),
-                [newX, newY](const Fish& fish) {
-                    return fish.getX() == newX && fish.getY() == newY;
-                });
-            fishList.erase(it, fishList.end());
-        }
-
-        // Move the shark to the new position
-        grid[x][y] = 0;  // Clear current position
-        x = newX;
-        y = newY;
-        grid[x][y] = 2;  // Set new position
-    }
-
-    decreaseEnergy();
-}
-void Shark::reproduce(std::vector<Shark>& sharkList) {
-    if (reproductionTime >= SharkBreed) {
-        sharkList.push_back(Shark(x, y));
-        reproductionTime = 0;
-    } else {
-        reproductionTime++;
-    }
-}
-
-void initializeGrid(std::vector<std::vector<int>>& grid, int xdim, int ydim) {
-    grid.resize(xdim, std::vector<int>(ydim, 0));
-}
-
-void updateGrid(std::vector<Fish>& fishList, std::vector<Shark>& sharkList, std::vector<std::vector<int>>& grid) {
-    // Temporarily store new fish and sharks to avoid concurrent modifications
-    std::vector<Fish> newFishList;
-    std::vector<Shark> newSharkList;
-
-    // Update fish positions on the grid
-    for (const auto& fish : fishList) {
-        grid[fish.getX()][fish.getY()] = 1;
-    }
-
-    for (const auto& shark : sharkList) {
-        grid[shark.getX()][shark.getY()] = 0;
-    }
-
-    // Move and update fish
-    for (int i = 0; i < fishList.size(); ++i) {
-        Fish newFish = fishList[i];
-        newFish.move(grid);
-        newFish.reproduce(newFishList);
-
-        newFishList.push_back(newFish);
-    }
-
-    // Move and update sharks
-    for (int i = 0; i < sharkList.size(); ++i) {
-        Shark newShark = sharkList[i];
-        newShark.move(grid);
-        newShark.reproduce(newSharkList);
-
-        newSharkList.push_back(newShark);
-    }
-
-    // Update shark positions on the grid after moving
-    for (const auto& shark : newSharkList) {
-        grid[shark.getX()][shark.getY()] = 2;
-    }
-
-    // Update fish and shark lists with the new lists
-    fishList = newFishList;
-    sharkList = newSharkList;
-}
-
-void drawGrid(sf::RenderWindow& window, std::vector<std::vector<int>>& grid, int cellXSize, int cellYSize) {
-    for (int i = 0; i < grid.size(); ++i) {
-        for (int j = 0; j < grid[0].size(); ++j) {
-            sf::RectangleShape cell(sf::Vector2f(static_cast<float>(cellXSize), static_cast<float>(cellYSize)));
-            cell.setPosition(i * cellXSize, j * cellYSize);
-
-            if (grid[i][j] == 1) {
-                cell.setFillColor(sf::Color::Green); // Fish
-            } else if (grid[i][j] == 2) {
-                cell.setFillColor(sf::Color::Red); // Shark
-            } else {
-                cell.setFillColor(sf::Color::Blue); // Empty
-            }
-
-            window.draw(cell);
+            // Reset survival time
+            survivalTime = 0;
         }
     }
-}
+};
 
 int main() {
-    std::vector<Shark> sharkList;
-    std::vector<std::vector<int>> grid;
+    sf::RenderWindow window(sf::VideoMode(gridSize * cellSize, gridSize * cellSize), "Prey and Predator Simulation");
 
-    initializeGrid(grid, xdim, ydim);
+    // Seed for random number generation
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-    // Populate initial fish and shark populations
-    for (int i = 0; i < numFish; ++i) {
-        fishList.push_back(Fish(rand() % xdim, rand() % ydim));
-    }
+    int numPrey = 10;  // Adjust the number of prey as needed
+    int numPredators = 5;  // Adjust the number of predators as needed
 
-    for (int i = 0; i < numSharks; ++i) {
-        sharkList.push_back(Shark(rand() % xdim, rand() % ydim));
-    }
-
-    sf::RenderWindow window(sf::VideoMode(WindowXSize, WindowYSize), "SFML Wa-Tor world");
+    std::vector<Entity> preyVector(numPrey);
+    std::vector<Entity> predatorVector(numPredators);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -243,13 +63,51 @@ int main() {
                 window.close();
         }
 
-        window.clear(sf::Color::Black);
+        // Move prey and check for collisions
+        for (auto& prey : preyVector) {
+            prey.move();
+        }
 
-        // Update and draw the simulation
-        updateGrid(fishList, sharkList, grid);
-        drawGrid(window, grid, cellXSize, cellYSize);
+        // Move predators and check for collisions
+        for (auto& predator : predatorVector) {
+            predator.move();
+
+            // Check for collisions (predator eats prey)
+            for (auto& prey : preyVector) {
+                if (!prey.isEaten && predator.x == prey.x && predator.y == prey.y) {
+                    // Predator eats the prey
+                    prey.isEaten = true;
+                }
+            }
+        }
+
+        // Remove eaten prey
+        preyVector.erase(std::remove_if(preyVector.begin(), preyVector.end(), [](const Entity& prey) {
+            return prey.isEaten;
+        }), preyVector.end());
+
+        window.clear();
+
+        // Draw prey
+        for (const auto& prey : preyVector) {
+            sf::RectangleShape preyShape(sf::Vector2f(cellSize, cellSize));
+            preyShape.setFillColor(sf::Color::Green);
+            preyShape.setPosition(prey.x * cellSize, prey.y * cellSize);
+            window.draw(preyShape);
+        }
+
+        // Draw predators
+        for (const auto& predator : predatorVector) {
+            sf::RectangleShape predatorShape(sf::Vector2f(cellSize, cellSize));
+            predatorShape.setFillColor(sf::Color::Red);
+            predatorShape.setPosition(predator.x * cellSize, predator.y * cellSize);
+            window.draw(predatorShape);
+        }
 
         window.display();
+
+        // Introduce a delay to slow down the simulation
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Adjust the delay as needed
     }
 
     return 0;

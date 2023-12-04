@@ -1,6 +1,3 @@
-# Sam Cullen
-# C00250093
-
 # Makefile for SFML test program
 
 # Compiler and flags
@@ -9,13 +6,13 @@ CPPFLAGS = -Wall -I/home/sam/Documents/Wa-tor
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lgomp
 
 # Source files
-SRCS = test.cpp
+SRCS = test.cpp 
 OBJS = $(SRCS:.cpp=.o)
 EXE = testApp
 
 # Rule to build object files
 %.o: %.cpp
-	$(CXX) -c -o $@ $< $(CPPFLAGS)
+	$(CXX) -c -o $@ $< $(CPPFLAGS) -std=c++11
 
 # Main target
 all: $(EXE)
@@ -31,3 +28,4 @@ clean:
 # Clean up all generated files
 distclean: clean
 	rm -f $(EXE)
+
