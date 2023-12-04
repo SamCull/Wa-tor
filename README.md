@@ -16,7 +16,7 @@ Parallel processing with OpenMP is utilized to improve simulation performance.
 SFML library: Ensure that SFML is installed on your system.
 OpenMP: The code uses OpenMP for parallel processing.
 
-## Implemantation
+## Implementation
 The project must be implemented on Linux using the gcc compiler and documented with Doxygen. This simulation must use openMP for parallelization. If
 you wish to run this on a GPU then either CUDA or openMP may be used. The
 simulation must show a simple graphical output representing the population at
