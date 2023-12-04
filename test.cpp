@@ -1,60 +1,150 @@
-#include <SFML/Graphics.hpp>
-#include <cstdlib>
-#include <ctime>
-#include <vector>
+// main.cpp
+#include <iostream>
 #include <chrono>
 #include <thread>
+#include "wator.h"
+#include <SFML/Graphics.hpp>
 
-const int gridSize = 100;
-const int cellSize = 5;
-const int reproductionTime = 50;  // Adjust the reproduction time as needed
+const int oceanWidth = 80;
+const int oceanHeight = 80;
+const int numFish = 500;
+const int numShark = 250;
 
-class Entity {
-public:
-    int x, y;
-    bool isEaten;
-    int survivalTime;
+Cell ocean[oceanWidth][oceanHeight]; // Declare ocean grid
 
-    Entity() {
-        x = rand() % gridSize;
-        y = rand() % gridSize;
-        isEaten = false;
-        survivalTime = 0;
+sf::RenderWindow window(sf::VideoMode(800, 600), "Wa-Tor Simulation");
+sf::Text fishCounter;
+sf::Text sharkCounter;
+
+void initializeText() {
+    if (!font.loadFromFile("arial.ttf")) {
+        // Handle font loading error
     }
 
-    void move() {
-        // Move randomly within the boundaries
-        x = std::max(0, std::min(gridSize - 1, x + rand() % 3 - 1));
-        y = std::max(0, std::min(gridSize - 1, y + rand() % 3 - 1));
+    fishCounter.setFont(font);
+    fishCounter.setCharacterSize(20);
+    fishCounter.setFillColor(sf::Color::White);
+    fishCounter.setPosition(10, 10);
 
-        // Increment survival time
-        ++survivalTime;
+    sharkCounter.setFont(font);
+    sharkCounter.setCharacterSize(20);
+    sharkCounter.setFillColor(sf::Color::White);
+    sharkCounter.setPosition(10, 40);
+}
 
-        // Reproduction
-        if (!isEaten && survivalTime >= reproductionTime) {
-            // Leave a new fish in the old position
-            Entity newFish;
-            newFish.x = x;
-            newFish.y = y;
-            preyVector.push_back(newFish);
+void updateCounters() {
+    fishCounter.setString("Fish: " + std::to_string(fishPop));
+    sharkCounter.setString("Sharks: " + std::to_string(sharkPop));
+}
 
-            // Reset survival time
-            survivalTime = 0;
+void drawCounters() {
+    window.draw(fishCounter);
+    window.draw(sharkCounter);
+}
+
+void addCreature(int creature, int nCreatures) {
+    for (int i = 0; i < nCreatures; ++i) {
+        int x = rand() % oceanWidth;
+        int y = rand() % oceanHeight;
+        if (ocean[x][y].cellType == OCEAN) {
+            ocean[x][y].age = rand() % fishBreed;
+            ocean[x][y].cellType = creature;
+
+            if (creature == FISH) {
+                ocean[x][y].cell.setFillColor(sf::Color::Green);
+            } else {
+                ocean[x][y].cell.setFillColor(sf::Color::Red);
+            }
+        } else {
+            --i;
         }
     }
-};
+}
+
+void drawOcean() {
+    window.clear();
+    for (int x = 0; x < oceanWidth; ++x) {
+        for (int y = 0; y < oceanHeight; ++y) {
+            ocean[x][y].madeMove = false;
+            if (ocean[x][y].cellType == OCEAN) {
+                ocean[x][y].cell.setFillColor(sf::Color::Black);
+            }
+            window.draw(ocean[x][y].cell);
+        }
+    }
+}
+
+int checkCellType(int x, int y, int cellType) {
+    int counter = 0;
+    const int directions[4][2] = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}}; // North, East, South, West
+
+    for (const auto& direction : directions) {
+        int newX = (x + direction[0] + oceanWidth) % oceanWidth;
+        int newY = (y + direction[1] + oceanHeight) % oceanHeight;
+
+        if (ocean[newX][newY].cellType == cellType) {
+            // If the cell matches the specified type, increment counter
+            ++counter;
+        }
+    }
+
+    return counter;
+}
+
+void findMove(int *xPosition, int *yPosition, int creature) {
+    int counter = checkCellType(*xPosition, *yPosition, creature);
+
+    if (counter > 0) {
+        int move = rand() % counter;
+
+        // Find a random neighboring cell with the specified type
+        for (const auto& direction : directions) {
+            int newX = ((*xPosition) + direction[0] + oceanWidth) % oceanWidth;
+            int newY = ((*yPosition) + direction[1] + oceanHeight) % oceanHeight;
+
+            if (ocean[newX][newY].cellType == creature) {
+                if (move == 0) {
+                    // Update the creature's position
+                    (*xPosition) = newX;
+                    (*yPosition) = newY;
+                    break;
+                }
+                --move;
+            }
+        }
+    }
+}
+
+void moveFish() {
+  
+}
+
+void moveShark() {
+    
+}
+
+void startSimulation() {
+    const int CELL_SIZE = 10;
+    int xPos = 0;
+    int yPos = 0;
+
+    for (int x = 0; x < oceanWidth; ++x) {
+        for (int y = 0; y < oceanHeight; ++y) {
+            ocean[x][y] = Cell();
+            ocean[x][y].cell.setPosition(sf::Vector2f(float(yPos), float(xPos)));
+            xPos += CELL_SIZE;
+        }
+        xPos = 0;
+        yPos += CELL_SIZE;
+    }
+
+    addCreature(FISH, numFish);
+    addCreature(SHARK, numShark);
+}
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(gridSize * cellSize, gridSize * cellSize), "Prey and Predator Simulation");
-
-    // Seed for random number generation
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-    int numPrey = 10;  // Adjust the number of prey as needed
-    int numPredators = 5;  // Adjust the number of predators as needed
-
-    std::vector<Entity> preyVector(numPrey);
-    std::vector<Entity> predatorVector(numPredators);
+    initializeText();
+    startSimulation();
 
     while (window.isOpen()) {
         sf::Event event;
@@ -63,51 +153,15 @@ int main() {
                 window.close();
         }
 
-        // Move prey and check for collisions
-        for (auto& prey : preyVector) {
-            prey.move();
-        }
-
-        // Move predators and check for collisions
-        for (auto& predator : predatorVector) {
-            predator.move();
-
-            // Check for collisions (predator eats prey)
-            for (auto& prey : preyVector) {
-                if (!prey.isEaten && predator.x == prey.x && predator.y == prey.y) {
-                    // Predator eats the prey
-                    prey.isEaten = true;
-                }
-            }
-        }
-
-        // Remove eaten prey
-        preyVector.erase(std::remove_if(preyVector.begin(), preyVector.end(), [](const Entity& prey) {
-            return prey.isEaten;
-        }), preyVector.end());
-
         window.clear();
-
-        // Draw prey
-        for (const auto& prey : preyVector) {
-            sf::RectangleShape preyShape(sf::Vector2f(cellSize, cellSize));
-            preyShape.setFillColor(sf::Color::Green);
-            preyShape.setPosition(prey.x * cellSize, prey.y * cellSize);
-            window.draw(preyShape);
-        }
-
-        // Draw predators
-        for (const auto& predator : predatorVector) {
-            sf::RectangleShape predatorShape(sf::Vector2f(cellSize, cellSize));
-            predatorShape.setFillColor(sf::Color::Red);
-            predatorShape.setPosition(predator.x * cellSize, predator.y * cellSize);
-            window.draw(predatorShape);
-        }
-
+        drawOcean();
+        moveFish();
+        moveShark();
+        updateCounters();
+        drawCounters();
         window.display();
 
-        // Introduce a delay to slow down the simulation
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Adjust the delay as needed
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     return 0;
