@@ -44,7 +44,21 @@ std::vector<std::tuple<int, int>> moves; // vector to store x y positions
 sf::RenderWindow window(sf::VideoMode(screenWidth, screenHeight), "Wa-Tor Simulation");
 sf::Text display;
 
-
+/**
+ * @brief Simulates the addition of creatures to the ocean grid in a Wa-tor simulation.
+ *
+ * The addCreature function adds a specified number of creatures to the ocean grid at random positions.
+ * The Wa-tor simulation typically models a predator-prey ecosystem with fish and sharks.
+ *
+ * @param creature The type of creature to add (FISH or SHARK).
+ * @param nCreatures The number of creatures to add.
+ *
+ * @details This function iterates through the specified number of creatures, randomly placing them on the ocean grid.
+ * For each creature, it selects a random position on the grid, checks if the cell is an ocean cell, and if so,
+ * adds the creature to that position. The function also sets the creature's age and updates the cell color
+ * based on the creature type (green for fish, red for sharks).
+ * If a chosen cell is not an ocean cell, the iteration counter is decremented to retry placing the creature.
+ */
 void addCreature(int creature, int nCreatures) 
 {
     
@@ -74,6 +88,17 @@ void addCreature(int creature, int nCreatures)
 }
 
 
+/**
+ * @brief Draws the ocean grid for the Wa-tor simulation.
+ *
+ * The drawOcean function iterates through each cell in the ocean grid,
+ * sets the color for ocean cells to black, and then draws the updated ocean grid
+ * on the screen using the SFML window.
+ *
+ * @details This function is responsible for updating the visual representation
+ * of the ocean grid by setting the color of each ocean cell to black.
+ * It ensures that any changes in the ocean grid are reflected in the displayed simulation.
+ */
 void drawOcean() {
     for (x = 0; x < oceanWidth; ++x) {
         for (y = 0; y < oceanHeight; ++y) {
@@ -88,7 +113,22 @@ void drawOcean() {
 }
 
 
-
+/**
+ * @brief Counts the number of neighboring cells with a specified type around a given position.
+ *
+ * The checkCellType function determines the number of neighboring cells of a specific type
+ * around the cell at coordinates (x, y) in the ocean grid. It considers four cardinal directions
+ * (North, East, South, West) and checks each neighboring cell for the specified cellType.
+ *
+ * @param x The x-coordinate of the cell.
+ * @param y The y-coordinate of the cell.
+ * @param cellType The type of cell to check for.
+ * @return The number of neighboring cells with the specified type.
+ *
+ * @details This function is useful for determining the number of cells of a particular type
+ * around a given cell position in the context of a cellular automaton or grid-based simulation.
+ * It updates a moves vector with the coordinates of neighboring cells of the specified type.
+ */
 int checkCellType(int x, int y, int cellType)
 {
     int counter = 0;
@@ -110,6 +150,21 @@ int checkCellType(int x, int y, int cellType)
 }
 
 
+/**
+ * @brief Finds a random move for a creature on the ocean grid.
+ *
+ * The findMove function determines a random move for a given creature at the specified position (x, y)
+ * on the ocean grid. It considers the creature type and searches for neighboring cells of interest,
+ * such as OCEAN cells for fish and FISH cells for sharks, to determine the move.
+ *
+ * @param xPosition Pointer to the x-coordinate of the creature's position.
+ * @param yPosition Pointer to the y-coordinate of the creature's position.
+ * @param creature The type of creature (FISH or SHARK).
+ *
+ * @details The function updates the creature's position based on the randomly chosen move.
+ * If the creature is a fish, it looks for neighboring ocean cells; if it is a shark, it first looks for
+ * neighboring fish cells and, if none are found, looks for neighboring ocean cells.
+ */
 void findMove(int *xPosition, int *yPosition, int creature) 
 {
     int counter = 0;
@@ -148,7 +203,19 @@ void findMove(int *xPosition, int *yPosition, int creature)
     moves.clear();
 } // end findMove
 
-
+/**
+ * @brief Finds a random move for a creature on the ocean grid.
+ *
+ * The findMove function determines a random move for a creature at the given position (x, y) on the ocean grid.
+ * For fish, it looks for neighboring ocean cells; for sharks, it first looks for neighboring fish cells,
+ * and if none are found, it looks for neighboring ocean cells.
+ *
+ * @param xPosition Pointer to the x-coordinate of the creature's position.
+ * @param yPosition Pointer to the y-coordinate of the creature's position.
+ * @param creature The type of creature (FISH or SHARK).
+ *
+ * @details The function updates the creature's position based on the randomly chosen move.
+ */
 void moveFish()
 {
     #pragma omp parallel for collapse(2) num_threads(4)
@@ -189,7 +256,16 @@ void moveFish()
     }
 } // end moveFish
 
-
+/**
+ * @brief Moves and updates sharks on the ocean grid in parallel.
+ *
+ * The moveShark function iterates through each shark on the ocean grid, updating their positions,
+ * age, and starve age based on simulation rules. The function uses parallel processing with OpenMP
+ * to improve performance.
+ *
+ * @details The function considers shark movement, feeding, breeding, and potential starvation.
+ * It adjusts the shark population and updates the ocean grid accordingly.
+ */
 void moveShark()
 {
     #pragma omp parallel for collapse(2) num_threads(4)
@@ -266,7 +342,16 @@ void moveShark()
     }
 } // end moveShark
 
-
+/**
+ * @brief Initializes and starts the Wa-tor simulation.
+ *
+ * The startSimulation function sets up the ocean grid with cells and positions them on the screen.
+ * It then adds an initial population of fish and sharks to the grid to begin the simulation.
+ *
+ * @details The function uses a constant CELL_SIZE to adjust the size of each cell in the grid.
+ * It initializes each cell in the ocean grid and positions them on the screen.
+ * Finally, it adds an initial population of fish and sharks to start the simulation.
+ */
 void startSimulation()
 {
     const int CELL_SIZE = 10;  // Adjust the cell size as needed
@@ -288,8 +373,18 @@ void startSimulation()
     addCreature(SHARK, numShark);
 }
 
-
+/**
+ * @brief Initializes SFML text objects for the Wa-tor simulation.
+ *
+ * The initializeText function sets up SFML text objects, including fish and shark counters,
+ * with specific font, size, color, and positions for displaying information on the screen.
+ *
+ * @details The function configures text objects for displaying fish and shark counts on the screen.
+ */
 void initializeText() {
+    // Use the default font that comes with SFML
+    font = sf::Font(); // Default font
+
     fishCounter.setFont(font);
     fishCounter.setCharacterSize(20);
     fishCounter.setFillColor(sf::Color::White);
@@ -299,36 +394,68 @@ void initializeText() {
     sharkCounter.setCharacterSize(20);
     sharkCounter.setFillColor(sf::Color::White);
     sharkCounter.setPosition(10, 40);
+    
 }
-
-
+/**
+ * @brief Updates and draws fish and shark counters on the SFML window.
+ *
+ * The updateCounters function modifies the text content of fish and shark counters based on
+ * the current population values. The drawCounters function renders the counters on the SFML window.
+ *
+ * @details These functions work together to dynamically display the current fish and shark populations
+ * on the screen during the Wa-tor simulation.
+ */
 void updateCounters() {
     fishCounter.setString("Fish: " + std::to_string(fishPop));
     sharkCounter.setString("Sharks: " + std::to_string(sharkPop));
 }
 
+/**
+ * @brief Draws fish and shark counters on the SFML window.
+ *
+ * The drawCounters function renders the fish and shark counters on the SFML window.
+ *
+ * @details This function is responsible for displaying the current fish and shark populations
+ * on the screen during the Wa-tor simulation.
+ */
 void drawCounters() {
     window.draw(fishCounter);
     window.draw(sharkCounter);
 }
 
-
+/**
+ * @brief Main function for running the Wa-tor simulation.
+ *
+ * The main function initializes the simulation, runs the simulation loop,
+ * and updates the display with the ocean grid and population changes.
+ *
+ * @details The simulation loop continues until the window is closed or the specified number
+ * of iterations is reached. It includes handling window events, drawing the ocean grid,
+ * moving fish and sharks, and updating the display at a specified time interval.
+ *
+ * @return An integer indicating the success of the program.
+ */
 int main() {
     startSimulation();
+
     while (window.isOpen() && chronon < ITERATIONS) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
+
         window.clear();
         drawOcean();
         moveFish();
         moveShark();
+        drawCounters();  // Draw fish and shark counters
         window.display();
-                std::this_thread::sleep_for(std::chrono::milliseconds(TIME));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(TIME));
         ++chronon;
     }
+
     return 0;
 }
 /* Running on 1, 2, 4, 8 threads
