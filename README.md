@@ -1,8 +1,9 @@
 # Wator Project
 
-### Author
+## Author
 Sam Cullen
-### Overview
+
+## Overview
 This project implements a simulation of the Wa-Tor model, a predator-prey ecosystem simulation, in C++ using the SFML library for graphics. The Wa-Tor simulation involves fish and sharks interacting in a two-dimensional grid, representing an ocean.
 
 ## Features
@@ -23,6 +24,7 @@ each step.
 
 ## Additional Information
 For detailed documentation, refer to the Doxygen comments in the code.
+For compiling help, refer to the Makefile 
 
 ## Project License:
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/4.0/ or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
