@@ -6,7 +6,7 @@ CPPFLAGS = -Wall -I/home/sam/Documents/Wa-tor
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lgomp
 
 # Source files
-SRCS = test.cpp 
+SRCS = main.cpp wator.cpp
 OBJS = $(SRCS:.cpp=.o)
 EXE = testApp
 
@@ -28,4 +28,3 @@ clean:
 # Clean up all generated files
 distclean: clean
 	rm -f $(EXE)
-
