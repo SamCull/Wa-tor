@@ -1,0 +1,17 @@
+The outcomes reveal the simulation duration for various thread counts in your Wa-tor simulation. The summary of the results is as follows:
+
+1 thread: 5.018 seconds
+2 threads: 4.34585 seconds
+4 threads: 4.33842 seconds
+8 threads: 4.83399 seconds
+16 threads: 5.72643 seconds
+
+In essence, the objective of parallelization is to diminish the overall execution time of a program by distributing the workload among multiple threads. The findings indicate that utilizing 2 or 4 threads enhances simulation time compared to a single-threaded approach. 
+However, with an increase in the number of threads to 8 and 16, the performance gains become less significant and may even result in a slight increase in execution time.
+
+This behavior aligns with Amdahl's law, which suggests that the speedup of a program from parallelization is limited by the sequential portion of the code.
+As the number of threads increases, the impact of parallelization diminishes due to factors such as communication overhead, contention for shared resources, and the nature of the workload. The optimal number of threads varies based on the specific characteristics of the problem, hardware architecture, and other considerations.
+
+To address this, further optimization may be necessary to achieve better scalability with a higher number of threads. Additionally, the performance results are influenced by the hardware on which the simulation runs.
+
+It is recommended to experiment with different thread counts, analyze performance, and explore alternative parallelization strategies to enhance speedup, considering the principles outlined by Amdahl's law.

@@ -20,7 +20,7 @@ const int numShark = 250;
 const int fishBreed = 5;
 const int sharkBreed = 7;
 const int STARVE = 5;
-const int TIME = 50; // time in milliseconds for each chronon, change to speed/slow down
+const int TIME = 25; // time in milliseconds for each chronon, change to speed/slow down
 const int ITERATIONS = 7000; 
 const int oceanWidth = 80;
 
@@ -31,8 +31,8 @@ const int OCEAN = 0;
 const int FISH = 1;
 const int SHARK = -1;
 
-int fishPop = numFish;
-int sharkPop = numShark;
+int fishPopulation = numFish;
+int sharkPopulation = numShark;
 int chronon = 0;
 int x, y, xMove, yMove;
 
@@ -203,6 +203,8 @@ void findMove(int *xPosition, int *yPosition, int creature)
     moves.clear();
 } // end findMove
 
+
+
 /**
  * @brief Finds a random move for a creature on the ocean grid.
  *
@@ -248,7 +250,7 @@ void moveFish()
                     {
                         ocean[xMove][yMove].Cell::age = 0;
                         ocean[x][y].Cell::age = 0;
-                        ++fishPop;
+                        ++fishPopulation;
                     }
                 } 
             }
@@ -280,7 +282,7 @@ void moveShark()
                 {
                     ocean[x][y].cell.setFillColor(sf::Color::Blue);
                     ocean[x][y].Cell::cellType = OCEAN;
-                    --sharkPop;
+                    --sharkPopulation;
                 }
                 else // shark exists
                 {
@@ -311,7 +313,7 @@ void moveShark()
                                 ocean[xMove][yMove].Cell::age = 0;
                                 ocean[xMove][yMove].Cell::starveAge = 0;
                                 ocean[x][y].Cell::age = 0;
-                                ++sharkPop;
+                                ++sharkPopulation;
                             }
                         }
                         else if (ocean[xMove][yMove].Cell::cellType == FISH)
@@ -320,7 +322,7 @@ void moveShark()
                             ocean[xMove][yMove].cell.setFillColor(sf::Color::Red);
                             ocean[xMove][yMove].Cell::madeMove = true;
                             ocean[xMove][yMove].Cell::starveAge = 0;
-                            --fishPop;
+                            --fishPopulation;
                             if (ocean[x][y].Cell::age < sharkBreed)
                             {
                                 ocean[x][y].cell.setFillColor(sf::Color::Blue);
@@ -332,7 +334,7 @@ void moveShark()
                                 ocean[xMove][yMove].Cell::age = 0;
                                 ocean[x][y].Cell::age = 0;
                                 ocean[x][y].cell.setFillColor(sf::Color::Red);
-                                ++sharkPop;
+                                ++sharkPopulation;
                             }
                         }
                     }
@@ -394,33 +396,6 @@ void initializeText() {
     sharkCounter.setCharacterSize(20);
     sharkCounter.setFillColor(sf::Color::White);
     sharkCounter.setPosition(10, 40);
-    
-}
-/**
- * @brief Updates and draws fish and shark counters on the SFML window.
- *
- * The updateCounters function modifies the text content of fish and shark counters based on
- * the current population values. The drawCounters function renders the counters on the SFML window.
- *
- * @details These functions work together to dynamically display the current fish and shark populations
- * on the screen during the Wa-tor simulation.
- */
-void updateCounters() {
-    fishCounter.setString("Fish: " + std::to_string(fishPop));
-    sharkCounter.setString("Sharks: " + std::to_string(sharkPop));
-}
-
-/**
- * @brief Draws fish and shark counters on the SFML window.
- *
- * The drawCounters function renders the fish and shark counters on the SFML window.
- *
- * @details This function is responsible for displaying the current fish and shark populations
- * on the screen during the Wa-tor simulation.
- */
-void drawCounters() {
-    window.draw(fishCounter);
-    window.draw(sharkCounter);
 }
 
 /**
@@ -436,53 +411,54 @@ void drawCounters() {
  * @return An integer indicating the success of the program.
  */
 int main() {
+    // Initialize SFML window, text objects, and simulation
     startSimulation();
+    initializeText();
 
-    while (window.isOpen() && chronon < ITERATIONS) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
+    // Open the speedup results file for writing
+    std::ofstream speedupFile("speedup_results.txt");
+    if (!speedupFile.is_open()) {
+        std::cerr << "Error opening speedup_results.txt file!" << std::endl;
+        return 1;
+    }
+
+    // Run the simulation for different thread counts
+    // Change numThreads to 1,2,4,8,16
+    for (int numThreads : {16}) {
+        // Set the number of threads
+        omp_set_num_threads(numThreads);
+
+        // Run the simulation
+        int start = clock();
+
+        // Continue running the simulation as long as the window is open
+        while (window.isOpen()) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+            }
+
+            window.clear();
+            drawOcean();
+            moveFish();
+            moveShark();
+            window.display();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(TIME));
+            ++chronon;
         }
 
-        window.clear();
-        drawOcean();
-        moveFish();
-        moveShark();
-        drawCounters();  // Draw fish and shark counters
-        window.display();
+        int end = clock();
+        double simulationTime = double(end - start) / CLOCKS_PER_SEC;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(TIME));
-        ++chronon;
+        // Log the simulation time and thread count to the file
+        std::cout << "Simulation time with " << numThreads << " threads: " << simulationTime << " seconds." << std::endl;
+        speedupFile << numThreads << " " << simulationTime << std::endl;
     }
+
+    // Close the speedup results file
+    speedupFile.close();
 
     return 0;
 }
-/* Running on 1, 2, 4, 8 threads
-int main() {
-    startSimulation();
-
-    // Replace (1) with 2,4,8 
-    omp_set_num_threads(1);
-    for (int i = 0; i < ITERATIONS; ++i) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-
-        window.clear();
-        drawOcean();
-        moveFish();
-        moveShark();
-        window.display();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(TIME));
-        ++chronon;
-    }
-
-    return 0;
-}
-
-
-*/
